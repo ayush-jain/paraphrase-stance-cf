@@ -3,7 +3,7 @@ import pandas as pd
 import re
 import itertools
 
-max_len = 15
+max_len = 105
 hits = 0
 def getseq(seq, lookup_dict):
     size = len(lookup_dict)

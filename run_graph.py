@@ -66,14 +66,17 @@ checkpoint_every = 500
 evaluate_every = (training_size/batch_size)+1
 dev_batch_size = 500
 
-lookup_filename = 'word_embedding_short.csv'
+lookup_filename = 'word_embedding.csv'
 train_filename = 'train.csv'
 dev_filename = 'dev.csv'
 
 outpath = 'output.csv'
+evalpath = 'eval.txt'
 
 lookup_frame = pd.read_csv(lookup_filename)
 lookup_labels = []
+
+#main_df = pd.DataFrame()
 
 with tf.Graph().as_default():
     initializer = tf.random_uniform_initializer(-init_scale, init_scale)
@@ -141,14 +144,14 @@ with tf.Graph().as_default():
     sess.run(initializer)
     vocab_size = lookup_frame.shape[0]
     
-    embedding_matrix = np.zeros((vocab_size+2, embedding_dim), dtype='float32')
+    embedding_matrix = np.random.random((vocab_size+2, embedding_dim))
     i=0
     for index, row in lookup_frame.iterrows():
         embedding_vector = np.array(eval(row['vector']))
         if embedding_vector is not None:
             embedding_matrix[i] = embedding_vector
             i=i+1
-    embedding_matrix[vocab_size] = np.ones((1, embedding_dim))        
+    #embedding_matrix[vocab_size] = np.ones((1, embedding_dim))        
     
     sess.run(train_graph.get_embedding_init(), feed_dict={train_graph.get_embedding_placeholder(): embedding_matrix})
 
@@ -278,9 +281,13 @@ with tf.Graph().as_default():
                 
             time_str = datetime.datetime.now().isoformat()
             print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss_value, accuracy))
+            with open(evalpath, 'a') as f1:
+                f1.write("{}: step {}, loss {:g}, acc {:g}\n".format(time_str, step, loss_value, accuracy))
             #train_summary_writer.add_summary(summaries, step)
 
     def dev_step(x1_ba, x1_bl, x2_ba, x2_bl, y_ba, writer=None):
+        #global main_df
+
         """
         Evaluates model on a dev set
         """
@@ -312,11 +319,17 @@ with tf.Graph().as_default():
         df = pd.DataFrame(probs)
         df['truth'] = y_ba
         df['predictions'] = pred
+        #main_df = main_df.append(df)
         with open(outpath, 'a') as f:
-            df.to_csv(outpath, header=True, index=False)        
+            df.to_csv(outpath, header=True, mode='a')
+            f.write('\n')
         
         time_str = datetime.datetime.now().isoformat()
         print("{}: step {}, loss {:g}, acc {:g}".format(time_str, step, loss_value, accuracy))
+        
+        with open(evalpath, 'a') as f2:
+            f2.write("\nEvaluation\n")
+            f2.write("{}: step {}, loss {:g}, acc {:g}\n\n".format(time_str, step, loss_value, accuracy))
         #if writer:
         #    writer.add_summary(summaries, step)
 
