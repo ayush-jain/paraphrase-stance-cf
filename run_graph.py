@@ -79,8 +79,8 @@ dev_filename = 'onew_result_2.csv'
 
 #outpath = 'output_set1_df_4.csv'
 #evalpath = 'eval_set1_df_4.txt'
-outpath = 'yo_new_output_zsl_341.csv'
-evalpath = 'yo_new_eval_zsl_341.txt'
+outpath = 'new_output_zsl_341.csv'
+evalpath = 'new_eval_zsl_341.txt'
 
 lookup_frame = pd.read_csv(lookup_filename)
 lookup_labels = []
