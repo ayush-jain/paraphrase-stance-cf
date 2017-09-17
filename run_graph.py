@@ -31,8 +31,10 @@ context_lstm_dim=200
 aggregation_lstm_dim=200
 embedding_dim = 300
 is_training=True
-filter_layer_threshold=0.2,
+filter_layer_threshold=0.2
+
 MP_dim=25
+
 context_layer_num=1
 aggregation_layer_num=1
 fix_word_vec=True
@@ -45,7 +47,7 @@ word_level_MP_dim=-1
 sep_endpoint=False
 end_model_combine=False
 
-with_match_highway=True,
+with_match_highway=True
 with_aggregation_highway=True
 highway_layer_num=1
 
@@ -59,19 +61,26 @@ with_maxpool_match=True
 with_attentive_match=True
 with_max_attentive_match=True
 
-training_size = 58008
+training_size = 5746
+
+#training_size = 51861
 batch_size = 30
-num_epochs = 8
+num_epochs = 9
 checkpoint_every = 500
 evaluate_every = (training_size/batch_size)+1
-dev_batch_size = 500
+dev_batch_size = 150
 
 lookup_filename = 'word_embedding.csv'
-train_filename = 'train.csv'
-dev_filename = 'dev.csv'
 
-outpath = 'output.csv'
-evalpath = 'eval.txt'
+#train_filename = 'tr_set1_df_4.csv'
+#dev_filename = 'tst_set1_df_4.csv'
+train_filename = 'tr-combined-341.csv'
+dev_filename = 'onew_result_2.csv'
+
+#outpath = 'output_set1_df_4.csv'
+#evalpath = 'eval_set1_df_4.txt'
+outpath = 'yo_new_output_zsl_341.csv'
+evalpath = 'yo_new_eval_zsl_341.txt'
 
 lookup_frame = pd.read_csv(lookup_filename)
 lookup_labels = []
@@ -139,6 +148,7 @@ with tf.Graph().as_default():
     initializer = tf.global_variables_initializer()
     
     session_conf = tf.ConfigProto(allow_soft_placement=True, log_device_placement=True)
+    session_conf.gpu_options.allow_growth = True
     sess = tf.Session(config=session_conf)
     
     sess.run(initializer)
@@ -321,7 +331,7 @@ with tf.Graph().as_default():
         df['predictions'] = pred
         #main_df = main_df.append(df)
         with open(outpath, 'a') as f:
-            df.to_csv(outpath, header=True, mode='a')
+            df.to_csv(outpath, header=False, mode='a')
             f.write('\n')
         
         time_str = datetime.datetime.now().isoformat()
@@ -340,11 +350,12 @@ with tf.Graph().as_default():
     x1, x1_len, x2, x2_len, y = dh.load_data(train_filename, lookup_dict)
     x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev = dh.load_data(dev_filename, lookup_dict)
     
+
     train_data = dh.batch_iter(x1, x1_len, x2, x2_len, y, batch_size, num_epochs, shuffle=True)
-    x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch = next(dh.batch_iter(x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev, dev_batch_size, 1, shuffle=False))
+    test_data = dh.batch_iter(x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev, dev_batch_size, 1, shuffle=False)
     
-    del(lookup_frame)
-    del(lookup_dict)
+    #del(lookup_frame)
+    #del(lookup_dict)
     
     # Training loop
     for x1_batch, x1_blen, x2_batch, x2_blen, y_batch in train_data:
@@ -355,20 +366,30 @@ with tf.Graph().as_default():
         current_step = tf.train.global_step(sess, train_graph.get_global_step())
             
         if current_step % evaluate_every == 0:
-            print("\nEvaluation:")
-            if(len(x1_dev_batch)==0 or len(x2_dev_batch)==0):
-                break    
-            dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=None)
-            #dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=dev_summary_writer)
+            x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev = dh.load_data(dev_filename, lookup_dict)
+            test_data = dh.batch_iter(x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev, dev_batch_size, 1, shuffle=False)
+            for x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch in test_data:
+                print("\nEvaluation:")
+                #print(len(x1_dev_len))
+                #print(len(x2_dev_len))
+                #print(x1_dev_batch)
+                if(len(x1_dev_batch)==0 or len(x2_dev_batch)==0):
+                    break    
+                dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=None)
+                #dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=dev_summary_writer)
             print("")
-    
+            
+            #test_data = dh.batch_iter(x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev, dev_batch_size, 1, shuffle=False) 
         #if current_step % checkpoint_every == 0:
             #path = saver.save(sess, checkpoint_prefix, global_step=current_step)
             #print("Saved model checkpoint to {}\n".format(path))
     
-    print("\nEvaluation:")
-    if(len(x1_dev_batch)!=0 and len(x2_dev_batch)!=0):
-        dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=None)
-        #dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=dev_summary_writer)
+    x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev = dh.load_data(dev_filename, lookup_dict)
+    test_data = dh.batch_iter(x1_dev, x1_dev_len, x2_dev, x2_dev_len, y_dev, dev_batch_size, 1, shuffle=False)
+    for x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch in test_data:
+    	print("\nEvaluation:")
+    	if(len(x1_dev_batch)!=0 and len(x2_dev_batch)!=0):
+        	dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=None)
+        	#dev_step(x1_dev_batch, x1_dev_len, x2_dev_batch, x2_dev_len, y_dev_batch, writer=dev_summary_writer)
     print("")
 

@@ -21,6 +21,8 @@ print dict
 out = []
 result = [] 
 for filename in os.listdir(os.getcwd()):    
+    if '.rsn' not in filename:
+        continue
     with open(filename,'r') as f:
         #print("\n\n\n********************"+filename + "\n")
         #if(flag > 0):

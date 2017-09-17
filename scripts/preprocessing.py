@@ -22,6 +22,7 @@ def tokenize(str):
 #Removing stopwords. Takes list of words, outputs list of words.
 def remove_stopwords(l_words, lang='english'):
 	l_stopwords = stopwords.words(lang)
+        l_stopwords.remove('not')
 	content = [w for w in l_words if w.lower() not in l_stopwords]
 	return content
 		

@@ -63,7 +63,7 @@ def load_data(file_name, lookup_dict):
         
         x2_batch.append(x2)
         
-        label = int(row['labels'])
+        label = int(row['label'])
         y_labels.append(label)
     
     print "Hits are--------------------------------------------------------\n"
